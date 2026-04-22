@@ -449,3 +449,54 @@ scalability
 backward compatibility
 deferred processing
 performance-aware design
+
+functions————topics:
+Low latency / real-time → PREEMPT_RT, interrupt latency, QoS, small buffers, CPU affinity
+High throughput → zero-copy, sk_buff design, NAPI, XDP, queue steering, large packets
+Security / filtering → Netfilter, eBPF, XDP
+Extensibility → layering, protocol handlers, loadable modules, Netlink
+Scalability → OSPF/BGP, summarisation, multicore steering
+Read-mostly concurrency → RCU
+Compatibility → backward compatibility, complement-not-replace design
+
+
+PREEMPT_RT should not be enabled by default. Linux 6.12 includes mainline PREEMPT_RT support, so it is available without relying on an out-of-tree RT kernel.
+It should be enabled only if the SBC has real-time requirements, such as motor control, industrial control, robotics, or real-time audio, where low and predictable latency matters.
+For general embedded workloads, it is usually better left disabled, because RT features can add overhead and may reduce overall throughput.
+
+musician perform:
+Standard Linux is not a strict real-time operating system, so it is not ideal by default for orchestra-level synchronisation.
+The kernel should be improved with PREEMPT_RT, real-time priorities, and threaded interrupts to reduce scheduling delay.
+Audio packets should be given the highest priority, with video below them and background traffic last, because timely sound matters more than perfect image quality.
+NIC drivers, interrupt handling, softirq processing, NAPI behaviour, and CPU affinity should be tuned to reduce packet-path latency.
+Audio and video buffers should be kept as small as possible to reduce end-to-end delay, but not so small that jitter causes glitches or loss of sync.
+Accurate timestamping and clock synchronisation are also required, so that all participants play and hear at the correct time.
+The central server must efficiently handle more than seventy simultaneous media streams, or queueing delay will become a bottleneck.
+Therefore Linux could be used, but only with heavy tuning, and even then Internet propagation delay may still prevent perfect real-time orchestral performance.
+
+self-drive Car
+This question is about Linux suitability for safety-critical embedded control, and about the networking properties needed inside a self-driving car.
+
+Linux is a good choice for many in-car computing tasks because it has strong driver support, good networking, modular design, and a mature software ecosystem.
+However, standard Linux is not a strict real-time operating system, so it may not be ideal for the most safety-critical control loops such as braking or steering.
+A realistic design would use Linux for higher-level functions such as planning, logging, communication, and sensor fusion, while the most time-critical control is handled by a dedicated RTOS or separate controller.
+In-car networking should provide low latency, low jitter, high reliability, traffic prioritisation, fault tolerance, and deterministic timing.
+These properties are important because control messages must arrive on time and in the correct order, even under heavy load.
+The Linux network stack supports modularity, prioritisation, driver support, scalability, and performance tuning quite well.
+It can be improved with real-time patches, CPU affinity, queue tuning, and other optimisations.
+But it is still mainly a general-purpose best-effort stack, so strict hard real-time guarantees are weaker than in a dedicated automotive RTOS.
+Therefore, Linux is useful in a self-driving car, but it is best used as part of a mixed architecture rather than as the only control platform.
+
+RCU VS Spinlock in memory-mapped
+A locking mechanism is usually needed, especially for writes and for any read-modify-write access. This register represents shared hardware state, so concurrent access could cause races or lost updates. RCU would not be a good choice, because it is designed for read-mostly kernel memory structures using copy-and-replace, not for directly protecting memory-mapped device registers. A spinlock is more effective because register access is short, needs immediate mutual exclusion, and may occur in interrupt context. A simple read may not always need locking if it is purely observational, but in practice a shared spinlock should protect both read and write paths.
+
+SoftISR High speed internet NAPI Polling less work in ISR but do it afrerwards
+Linux handles this by deferring non-urgent interrupt work into softirq queues. The hardware ISR does only minimal urgent work, queues the rest, and exits quickly. The queued work is then run soon afterwards at kernel checkpoints such as interrupt return, system-call exit, scheduler activity, and timer/jiffy events via do_softirq().
+
+This is efficient, but not fully robust on modern high-speed hardware: pure interrupt-driven softirq handling can suffer from heavy interrupt load, cache disruption, and scheduling overhead. Linux improves this with NAPI, mixing interrupts with polling under load.
+
+
+SMP Cache hit
+SMP (Symmetric Multiprocessing) uses two or more equal processors sharing the same main memory and I/O system. Each CPU can run tasks independently under one operating system. Typically, each processor has a private cache connected through a shared bus or interconnect to common main memory.
+A cache hit means the required data is found in the processor’s cache, so main memory does not need to be accessed. Caches improve SMP performance because cache access is much faster than RAM access, reducing memory latency and shared-bus traffic. This lets multiple processors run in parallel more efficiently, though cache coherence is needed.
+
