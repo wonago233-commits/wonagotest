@@ -68,3 +68,52 @@ In the Linux kernel, ICMP is implemented as part of the IP stack. After IP recei
 
 This line means:
 the kernel looks at the ICMP packet type, uses that type as an index into the icmp_pointers[] table, finds the corresponding handler function, calls it with the packet skb, and stores the return value in success.
+
+
+Function / code object	One-line purpose	Stack area	What to emphasise in an exam answer
+skb_network_offset()	Returns the byte offset of the network-layer header from skb->data	sk_buff helper	It tells where the L3 header starts in the current data area
+skb_pagelen()	Calculates total packet length including linear and paged parts	sk_buff helper	Not just the linear buffer; must include paged fragments
+netif_rx()	Hands a received packet from the driver into the kernel receive path	Receive entry	Driver-to-stack handoff, often leading to backlog / softirq processing
+napi_poll()	Polls a network device and processes a batch of packets under a budget	Receive / NAPI	Polling, budget control, fewer interrupts, throughput vs latency balance
+ipv6_rcv()	Processes an incoming packet at the IPv6 layer	IPv6 receive	Basic validation and then handoff to later IPv6 processing
+icmp_rcv()	Processes a received ICMP packet	ICMP receive	Usually dispatches according to ICMP type
+icmp_send()	Builds and sends an ICMP reply or error message	ICMP transmit	Creates a response and then sends it through the IPv4 output path
+dev_hard_start_xmit()	Hands a packet to the specific NIC driver for transmission	Device transmit	Key device-layer transmit interface below qdisc/protocol code
+skb_gso_segment()	Splits a large packet into smaller segments for transmission	Transmit optimisation	Shows offload/segmentation design and performance optimisation
+cbs_init()	Initialises a Constant Bandwidth Server scheduler instance	Scheduling / qdisc	State setup, configuration, scheduler modularity
+counter_validate()	Validates packet counter / anti-replay state in WireGuard receive processing	Secure receive path	Fast validation and replay protection
+corkscrew_interrupt()	Interrupt service routine for an older 3Com NIC driver	Driver / ISR	Minimal urgent work in ISR, then defer the rest
+vti6_xmit()	Transmits a packet through an IPv6 tunnel	Tunnel transmit	Encapsulation plus handoff to the normal output path
+udp_compress()	Compresses a UDP header for 6LoWPAN	Low-power networking	Saves bytes for constrained links
+kmalloc(..., GFP_KERNEL)	Normal kernel allocation that may sleep	Memory management	Wrong for interrupt context because it may block
+kmalloc(..., GFP_ATOMIC)	Atomic allocation that must not sleep	Memory management	Suitable for ISR / softirq, but with tighter memory constraints
+spin_lock() / spin_unlock()	Acquire and release a spinlock	Concurrency	Used in atomic contexts; apparent mismatch can come from branches or wrappers
+host/network byte-order helpers	Convert between host and network endianness	Basic helper logic	Endianness conversion, not protocol logic
+skbuff.h inline block	Moves headers and updates pointers/lengths inside skb	sk_buff core operations	This is the basis of header push/pull/put logic
+loopback code block	Handles packet transmission/reception on the loopback interface	Special device path	Packet stays inside host but still uses the common network stack design
+netfilter/core.c block	Registers or runs packet-processing hooks	Filtering framework	Hook-based extensibility in the kernel
+ip_fragment.c block	Handles fragment queueing or packet reassembly	IPv4 reassembly	Queue state, overlap detection, completion checks
+ip_output.c block	Handles part of the IPv4 transmit path	IPv4 output	Output-stage processing before lower-layer transmit
+dev.c block	Implements generic network device receive/transmit logic	Core networking / device layer	Often used to show stack layering and deferral mechanisms
+br_input.c block	Handles incoming packets in the Linux bridge code	Layer 2 bridging	L2 forwarding/bridging, not Layer 3 routing
+
+
+Common mistakes in these questions
+
+First, students often describe only the function name, not the stack position.
+Second, they say only “this function processes packets”, which is too vague.
+Third, they ignore what comes before and after the function.
+Fourth, in sk_buff questions, they forget to mention offsets, pointer movement, or linear vs paged data.
+
+Useful exam sentence template
+
+English answer template:
+
+This function belongs to the ____ stage of the Linux networking stack.
+It usually takes ____ as input and mainly performs ____.
+After this, the packet or state is typically passed to ____ for further processing.
+So its main role is to provide ____ between ____ and ____.
+
+If you want, I can next turn this into a shorter revision sheet in the format:
+
+function name + stack layer + caller + next step + typical exam point.
