@@ -130,34 +130,155 @@ This shows:
 table-driven dispatch
 modular protocol handling
 type-based function selection
-6. Important Kernel / Networking Functions
-Function / Code Object	One-line Purpose	Stack Area	What to Emphasise in an Exam Answer
-skb_network_offset()	Returns the byte offset of the network-layer header from skb->data	sk_buff helper	It tells where the L3 header starts in the current data area
-skb_pagelen()	Calculates total packet length including linear and paged parts	sk_buff helper	Not just the linear buffer; must include paged fragments
-netif_rx()	Hands a received packet from the driver into the kernel receive path	Receive entry	Driver-to-stack handoff, often leading to backlog / softirq processing
-napi_poll()	Polls a network device and processes a batch of packets under a budget	Receive / NAPI	Polling, budget control, fewer interrupts, throughput vs latency balance
-ipv6_rcv()	Processes an incoming packet at the IPv6 layer	IPv6 receive	Basic validation and then handoff to later IPv6 processing
-icmp_rcv()	Processes a received ICMP packet	ICMP receive	Usually dispatches according to ICMP type
-icmp_send()	Builds and sends an ICMP reply or error message	ICMP transmit	Creates a response and then sends it through the IPv4 output path
-dev_hard_start_xmit()	Hands a packet to the specific NIC driver for transmission	Device transmit	Key device-layer transmit interface below qdisc/protocol code
-skb_gso_segment()	Splits a large packet into smaller segments for transmission	Transmit optimisation	Shows offload/segmentation design and performance optimisation
-cbs_init()	Initialises a Constant Bandwidth Server scheduler instance	Scheduling / qdisc	State setup, configuration, scheduler modularity
-counter_validate()	Validates packet counter / anti-replay state in WireGuard receive processing	Secure receive path	Fast validation and replay protection
-corkscrew_interrupt()	Interrupt service routine for an older 3Com NIC driver	Driver / ISR	Minimal urgent work in ISR, then defer the rest
-vti6_xmit()	Transmits a packet through an IPv6 tunnel	Tunnel transmit	Encapsulation plus handoff to the normal output path
-udp_compress()	Compresses a UDP header for 6LoWPAN	Low-power networking	Saves bytes for constrained links
-kmalloc(..., GFP_KERNEL)	Normal kernel allocation that may sleep	Memory management	Wrong for interrupt context because it may block
-kmalloc(..., GFP_ATOMIC)	Atomic allocation that must not sleep	Memory management	Suitable for ISR / softirq, but with tighter memory constraints
-spin_lock() / spin_unlock()	Acquire and release a spinlock	Concurrency	Used in atomic contexts; apparent mismatch can come from branches or wrappers
-Host/network byte-order helpers	Convert between host and network endianness	Basic helper logic	Endianness conversion, not protocol logic
-skbuff.h inline block	Moves headers and updates pointers/lengths inside skb	sk_buff core operations	This is the basis of header push/pull/put logic
-Loopback code block	Handles packet transmission/reception on the loopback interface	Special device path	Packet stays inside host but still uses the common network stack design
-netfilter/core.c block	Registers or runs packet-processing hooks	Filtering framework	Hook-based extensibility in the kernel
-ip_fragment.c block	Handles fragment queueing or packet reassembly	IPv4 reassembly	Queue state, overlap detection, completion checks
-ip_output.c block	Handles part of the IPv4 transmit path	IPv4 output	Output-stage processing before lower-layer transmit
-dev.c block	Implements generic network device receive/transmit logic	Core networking / device layer	Often used to show stack layering and deferral mechanisms
-br_input.c block	Handles incoming packets in the Linux bridge code	Layer 2 bridging	L2 forwarding/bridging, not Layer 3 routing
-7. Common Mistakes in Code Questions
+skb_network_offset()
+
+Purpose: Returns the byte offset of the network-layer header from skb->data
+Stack area: sk_buff helper
+Exam point: It tells where the L3 header starts in the current data area.
+
+skb_pagelen()
+
+Purpose: Calculates total packet length including linear and paged parts
+Stack area: sk_buff helper
+Exam point: Not just the linear buffer; it must include paged fragments.
+
+netif_rx()
+
+Purpose: Hands a received packet from the driver into the kernel receive path
+Stack area: Receive entry
+Exam point: It is the driver-to-stack handoff, often leading to backlog or softirq processing.
+
+napi_poll()
+
+Purpose: Polls a network device and processes a batch of packets under a budget
+Stack area: Receive / NAPI
+Exam point: Shows polling, budget control, fewer interrupts, and the throughput-latency trade-off.
+
+ipv6_rcv()
+
+Purpose: Processes an incoming packet at the IPv6 layer
+Stack area: IPv6 receive
+Exam point: Basic validation first, then handoff to later IPv6 processing.
+
+icmp_rcv()
+
+Purpose: Processes a received ICMP packet
+Stack area: ICMP receive
+Exam point: Usually dispatches according to ICMP type.
+
+icmp_send()
+
+Purpose: Builds and sends an ICMP reply or error message
+Stack area: ICMP transmit
+Exam point: Creates a response and sends it through the IPv4 output path.
+
+dev_hard_start_xmit()
+
+Purpose: Hands a packet to the NIC driver for transmission
+Stack area: Device transmit
+Exam point: Key device-layer transmit interface below qdisc and protocol code.
+
+skb_gso_segment()
+
+Purpose: Splits a large packet into smaller segments for transmission
+Stack area: Transmit optimisation
+Exam point: Shows segmentation/offload design and performance optimisation.
+
+cbs_init()
+
+Purpose: Initialises a Constant Bandwidth Server scheduler instance
+Stack area: Scheduling / qdisc
+Exam point: State setup, configuration, and scheduler modularity.
+
+counter_validate()
+
+Purpose: Validates packet counter / anti-replay state in WireGuard receive processing
+Stack area: Secure receive path
+Exam point: Fast validation and replay protection.
+
+corkscrew_interrupt()
+
+Purpose: Interrupt service routine for an older 3Com NIC driver
+Stack area: Driver / ISR
+Exam point: Minimal urgent work in ISR, then defer the rest.
+
+vti6_xmit()
+
+Purpose: Transmits a packet through an IPv6 tunnel
+Stack area: Tunnel transmit
+Exam point: Encapsulation plus handoff to the normal output path.
+
+udp_compress()
+
+Purpose: Compresses a UDP header for 6LoWPAN
+Stack area: Low-power networking
+Exam point: Saves bytes for constrained links.
+
+kmalloc(..., GFP_KERNEL)
+
+Purpose: Normal kernel allocation that may sleep
+Stack area: Memory management
+Exam point: Wrong for interrupt context because it may block.
+
+kmalloc(..., GFP_ATOMIC)
+
+Purpose: Atomic allocation that must not sleep
+Stack area: Memory management
+Exam point: Suitable for ISR / softirq, but with tighter memory constraints.
+
+spin_lock() / spin_unlock()
+
+Purpose: Acquire and release a spinlock
+Stack area: Concurrency
+Exam point: Used in atomic contexts; an apparent mismatch may come from branches or wrappers.
+
+host/network byte-order helpers
+
+Purpose: Convert between host and network endianness
+Stack area: Basic helper logic
+Exam point: Endianness conversion, not protocol logic.
+
+skbuff.h inline block
+
+Purpose: Moves headers and updates pointers/lengths inside skb
+Stack area: sk_buff core operations
+Exam point: This is the basis of header push/pull/put logic.
+
+loopback code block
+
+Purpose: Handles packet transmission/reception on the loopback interface
+Stack area: Special device path
+Exam point: The packet stays inside the host but still uses the common network stack design.
+
+netfilter/core.c block
+
+Purpose: Registers or runs packet-processing hooks
+Stack area: Filtering framework
+Exam point: Hook-based extensibility in the kernel.
+
+ip_fragment.c block
+
+Purpose: Handles fragment queueing or packet reassembly
+Stack area: IPv4 reassembly
+Exam point: Queue state, overlap detection, and completion checks.
+
+ip_output.c block
+
+Purpose: Handles part of the IPv4 transmit path
+Stack area: IPv4 output
+Exam point: Output-stage processing before lower-layer transmit.
+
+dev.c block
+
+Purpose: Implements generic network device receive/transmit logic
+Stack area: Core networking / device layer
+Exam point: Often used to show stack layering and deferral mechanisms.
+
+br_input.c block
+
+Purpose: Handles incoming packets in the Linux bridge code
+Stack area: Layer 2 bridging
+Exam point: L2 forwarding/bridging, not Layer 3 routing.
 Mistake 1: only describing the function name
 
 Students often describe only the function name, not the stack position.
